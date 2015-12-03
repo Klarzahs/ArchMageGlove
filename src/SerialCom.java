@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.Enumeration;
 
 import gnu.io.CommPortIdentifier;
@@ -18,7 +19,7 @@ public class SerialCom implements SerialPortEventListener {
 	private BufferedReader input;
 	private OutputStream output;
 	private static final int TIME_OUT = 2000;
-	private static final int DATA_RATE = 38400;
+	private static final int DATA_RATE = 115200;
 	
 	
 	private long lastStep;
@@ -78,30 +79,15 @@ public class SerialCom implements SerialPortEventListener {
 		
 		if (oEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
 			try {
-				long dt = lastStep - System.currentTimeMillis();
-				lastStep = System.currentTimeMillis();
-				
 				String inputLine=input.readLine();
 				
 				if(inputLine.length() > 0){
-					String[] arr = inputLine.split("x");
+					String[] arr = inputLine.split(",");
 					
 					if(arr.length == 7){
-						int owner = Integer.parseInt(arr[0]);
-						
-						float eulerX = Float.parseFloat(arr[1]);
-						float eulerY = Float.parseFloat(arr[2]);
-						float eulerZ = Float.parseFloat(arr[3]);
-						
-						float accX = Float.parseFloat(arr[4]);
-						float accY = Float.parseFloat(arr[5]);
-						float accZ = Float.parseFloat(arr[6]);
-						
-						if(owner == 0){
-							main.getFilter(0).update(eulerX, eulerY, eulerZ, accX, accY, accZ, (float)dt);
-						}
-					} else{
-						System.out.println("received != 7");
+						main.getFilter(Integer.parseInt(arr[0])).input(Arrays.copyOfRange(arr, 1, arr.length));
+					}else{
+						System.err.println(inputLine);
 					}
 				}
 				else{

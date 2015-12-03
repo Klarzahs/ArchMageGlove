@@ -788,13 +788,14 @@ void setup()
   uint8_t c;
 
 
-  Serial.begin(19200);
+  Serial.begin(115200);
   /*
   Serial.println(F("InvenSense MPU-6050"));
   Serial.println(F("June 2012"));
   */
   // Initialize the 'Wire' class for the I2C-bus.
   Wire.begin();
+  //TWBR = 12;
 
   error = MPU6050_read (MPU6050_WHO_AM_I, &c, 1);
 
@@ -804,86 +805,50 @@ void setup()
   MPU6050_write_reg (MPU6050_PWR_MGMT_1, 0);
   
   //Initialize the angles
-  calibrate_sensors();  
-  set_last_read_angle_data(millis(), 0, 0, 0, 0, 0, 0);
+  //calibrate_sensors();  
+  //set_last_read_angle_data(millis(), 0, 0, 0, 0, 0, 0);
 }
 
+
+accel_t_gyro_union accel_t_gyro;
+  
 void loop()
 {
 
-  
-  digitalWrite(6, level & (1<<0));
-  digitalWrite(7, level & (1<<1));
-  
-  
+  digitalWrite(6, level & 0x01);
+  digitalWrite(7, (level>>1) & 0x01);
+
   int error;
-  double dT;
-  accel_t_gyro_union accel_t_gyro;
 
   // Read the raw values.
   error = read_gyro_accel_vals((uint8_t*) &accel_t_gyro);
-  
-  // Get the time of reading for rotation computations
-  unsigned long t_now = millis();
-   
-  // Convert gyro values to degrees/sec
-  float FS_SEL = 131;
-  float gyro_x = (accel_t_gyro.value.x_gyro - base_x_gyro)/FS_SEL;
-  float gyro_y = (accel_t_gyro.value.y_gyro - base_y_gyro)/FS_SEL;
-  float gyro_z = (accel_t_gyro.value.z_gyro - base_z_gyro)/FS_SEL;
-  
-  
-  // Get raw acceleration values
-  //float G_CONVERT = 16384;
-  float accel_x = accel_t_gyro.value.x_accel;
-  float accel_y = accel_t_gyro.value.y_accel;
-  float accel_z = accel_t_gyro.value.z_accel;
-  
-  // Get angle values from accelerometer
-  float RADIANS_TO_DEGREES = 180/3.14159;
-//  float accel_vector_length = sqrt(pow(accel_x,2) + pow(accel_y,2) + pow(accel_z,2));
-  float accel_angle_y = atan(-1*accel_x/sqrt(pow(accel_y,2) + pow(accel_z,2)))*RADIANS_TO_DEGREES;
-  float accel_angle_x = atan(accel_y/sqrt(pow(accel_x,2) + pow(accel_z,2)))*RADIANS_TO_DEGREES;
-  float accel_angle_z = atan(sqrt(pow(accel_x,2) + pow(accel_y,2))/accel_z)*RADIANS_TO_DEGREES;
-  
-  // Compute the (filtered) gyro angles
-  float dt =(t_now - get_last_time())/1000.0;
-  float gyro_angle_x = gyro_x*dt + get_last_x_angle();
-  float gyro_angle_y = gyro_y*dt + get_last_y_angle();
-  float gyro_angle_z = gyro_z*dt + get_last_z_angle();
-  
-  // Compute the drifting gyro angles
-  float unfiltered_gyro_angle_x = gyro_x*dt + get_last_gyro_x_angle();
-  float unfiltered_gyro_angle_y = gyro_y*dt + get_last_gyro_y_angle();
-  float unfiltered_gyro_angle_z = gyro_z*dt + get_last_gyro_z_angle();
-  
-  // Apply the complementary filter to figure out the change in angle - choice of alpha is
-  // estimated now.  Alpha depends on the sampling rate...
-  float alpha = 0.96;
-  float angle_x = alpha*gyro_angle_x + (1.0 - alpha)*accel_angle_x;
-  float angle_y = alpha*gyro_angle_y + (1.0 - alpha)*accel_angle_y;
-  float angle_z = alpha*gyro_angle_z + (1.0 - alpha)*accel_angle_z;
-  
-  Serial.println(angle_z - gyro_angle_z);  //Accelerometer doesn't give z-angle
 
-  // Update the saved data with the latest values
-  set_last_read_angle_data(t_now, angle_x, angle_y, angle_z, unfiltered_gyro_angle_x, unfiltered_gyro_angle_y, unfiltered_gyro_angle_z);
-  
-  // Send the data to the serial port
-  Serial.print(F("#"));             //Filtered angle
-  Serial.print(level);
-  Serial.print(F(": "));
-  Serial.print(angle_x, 2);
-  Serial.print(F(","));
-  Serial.print(angle_y, 2);
-  Serial.print(F(","));
-  Serial.print(angle_z, 2);
-  Serial.println(F(""));
+  if(error == 0){
+    // Send the data to the serial port
+    Serial.print(level);
+    Serial.print(F(","));
+    Serial.print(accel_t_gyro.value.x_accel);
+    Serial.print(F(","));
+    Serial.print(accel_t_gyro.value.y_accel);
+    Serial.print(F(","));
+    Serial.print(accel_t_gyro.value.z_accel);
+    Serial.print(F(","));
+    Serial.print(accel_t_gyro.value.x_gyro);
+    Serial.print(F(","));
+    Serial.print(accel_t_gyro.value.y_gyro);
+    Serial.print(F(","));
+    Serial.println(accel_t_gyro.value.z_gyro);
+  }else
+    Serial.println(error);
 
-   level = (level + 1) % 3;
+
+  //Serial.println((level>>1) & 0x01);
+  //Serial.print(level & 0x01);
+
+  level = (level + 1) % 3;
 
   // Delay so we don't swamp the serial port
-  delay(100);
+  delay(500);
 }
 
 

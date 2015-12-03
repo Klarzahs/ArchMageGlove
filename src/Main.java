@@ -2,16 +2,15 @@
 public class Main {
 	private SerialCom sCom;
 	private Thread keepAlive;
-	private KalmanFilter2[][] filter = new KalmanFilter2[1][3];
+	private ComplementaryFilter[] filter = new ComplementaryFilter[3];
 	
 	public Main(){
 		sCom = new SerialCom();
 		sCom.initialize(this);
 		
-		for(int i = 0; i < filter[0].length; i++){
-			filter[0][i] = new KalmanFilter2();
+		for(int i = 0; i < filter.length; i++){
+			filter[i] = new ComplementaryFilter(i);
 		}
-		
 		
 		initThread();
 	}
@@ -33,8 +32,8 @@ public class Main {
 		System.out.println("Started");
 	}
 	
-	public KalmanFilter2 getFilter(int nr){
-		if(nr < filter[0].length) return filter[0][nr];
+	public ComplementaryFilter getFilter(int nr){
+		if(nr < filter.length) return filter[nr];
 		return null;
 	}
 	
