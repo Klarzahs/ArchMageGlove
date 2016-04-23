@@ -40,7 +40,7 @@ void loop(){
   for(int i = 0; i < 3; i++){
    digitalWrite(6, i & 0x01);
    digitalWrite(7, (i>>1) & 0x01);
-   delay(1);
+   delay(10);
    
    accelgyro[i].getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
    delay(25);
